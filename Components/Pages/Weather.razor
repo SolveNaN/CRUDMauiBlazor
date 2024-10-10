@@ -1,0 +1,80 @@
+﻿@page "/weather"
+@inject HttpClient Http
+<h1>Productos</h1>
+@if (Productos == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Valor</th>
+                <td></td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Productos)
+            {
+                <tr>
+                    <td>@p.Nombre</td>
+                    <td>@p.Valor</td>
+                    <td>
+                        <button @onclick="()=>AsignarProducto(p)" class="btn btn-outline-secondary">Asignar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<label>Nombre</label>
+<input type="text" @bind-value=producto.Nombre class="form-control" />
+<label>Valor</label>
+<input type="number" @bind-value=producto.Valor class="form-control" />
+<br />
+<button class="btn btn-outline-success" @onclick=Guardar>Guardar</button>
+<button class="btn btn-outline-success" @onclick=Editar>Actualizar</button>
+<button class="btn btn-outline-success" @onclick=Eliminar>Eliminar</button>
+<label>@Respuesta</label>
+@code {
+    Producto producto = new Producto();
+    public static List<Producto> Productos = new List<Producto>();
+    string Respuesta = "Procesando...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ObtenerProductos();
+    }
+
+
+    async Task Guardar()
+    {
+        producto.Id = 0;
+        var respuestajson = await Http.PostAsJsonAsync("https://localhost:7091/api/Producto/Crear", producto);
+        Respuesta = await respuestajson.Content.ReadAsStringAsync();
+        await ObtenerProductos();
+    }
+
+    async Task ObtenerProductos()
+    {
+        var respuestaproducto = await Http.GetFromJsonAsync<List<Producto>>("https://localhost:7091/api/Producto/Listado");
+        Productos = respuestaproducto;
+    }
+
+    async Task AsignarProducto(Producto objeto)
+    {
+        producto = objeto;
+    }
+    async Task Editar()
+    {
+        var respuesta = await Http.PutAsJsonAsync($"https://localhost:7091/api/Producto/Actualizar/{producto.Id}", producto);
+        await ObtenerProductos();
+    }
+    async Task Eliminar()
+    {
+        var respuesta = await Http.DeleteAsync($"https://localhost:7091/api/Producto/Eliminar/{producto.Id}");
+        await ObtenerProductos();
+    }
+}
